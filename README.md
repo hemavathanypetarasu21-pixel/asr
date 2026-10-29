@@ -1,4 +1,4 @@
-# ASR Studio — v1
+# ASR Studio — v1.0.0
 
 Speech recognition for Malaysian code-switched speech. Record or upload **Manglish** (Malay + English) or **Tanglish** (Tamil + English) audio, then analyse it to get a transcript, the detected dialect with a confidence score, and an English translation.
 
@@ -26,6 +26,7 @@ The declared language and speaker mode are stored with every recording as a data
 frontend/   Next.js 16 (App Router), React 19, Tailwind 4, axios, react-hook-form + zod, Supabase SSR
 backend/    FastAPI, MongoDB (PyMongo async + GridFS), Supabase JWT (JWKS), openai-whisper, google-genai
 design/     architecture.md (source of truth for structure), agent-rules.md
+services/   Windows service install/uninstall scripts (NSSM)
 ```
 
 Backend layout: `api/{routers,endpoints,schemas}` has one module per UI control (`speak`, `upload`, `languages`, `modes`, `models`, `recordings`, `analyse`, `settings`); logic lives in `src/{config,db,auth,services}`. See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for endpoints and the API contract.
@@ -56,6 +57,16 @@ pnpm dev                    # http://localhost:3000
 ```
 
 All configuration comes from environment variables; both apps refuse to start if a required one is missing.
+
+## Run as Windows services
+
+To run without an IDE, install the backend and frontend as Windows services that start with Windows and restart on failure. Stop any dev servers first, then from **PowerShell as Administrator**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\asr\services\install-services.ps1
+```
+
+This builds the frontend, installs `ASRStudioBackend` and `ASRStudioFrontend` with [NSSM](https://nssm.cc), and starts them (frontend on `http://localhost:3000`). Manage them with `Get-Service ASRStudio*`, `Restart-Service`, or `services.msc`; logs are in `services\logs`. Re-run the script after code or `.env` changes. See [services/README.md](services/README.md) for options and uninstalling.
 
 ## Known limitations (v1)
 

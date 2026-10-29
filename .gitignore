@@ -24,3 +24,7 @@ uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Windows services (local logs and the NSSM binary)
+services/logs/
+services/bin/
