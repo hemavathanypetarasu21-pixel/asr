@@ -183,7 +183,12 @@ export default function RecordingItem({
               <div className="grid gap-2 md:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">Transcript</p>
-                  <p className="mt-1 rounded-md bg-subtle p-2.5 text-[13px] leading-6 text-ink">{analysis.transcript || "No speech recognised."}</p>
+                  <p className="mt-1 rounded-md bg-subtle p-2.5 text-[13px] leading-6 text-ink">{recording.corrected_transcript ?? (analysis.transcript || "No speech recognised.")}</p>
+                  {recording.corrected_transcript && (
+                    <p className="mt-1 text-[11px] leading-4 text-muted">
+                      Corrected by you · Model output: {analysis.transcript || "(no speech recognised)"}
+                    </p>
+                  )}
                   {analysis.transcript_native && (
                     <p className="mt-1 text-[11px] leading-4 text-muted" lang="ta">Tamil script: {analysis.transcript_native}</p>
                   )}

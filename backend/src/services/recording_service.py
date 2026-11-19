@@ -103,6 +103,18 @@ async def save_analysis(user_id: str, recording_id: str, analysis: dict) -> dict
     return document
 
 
+async def save_corrected_transcript(user_id: str, recording_id: str, transcript: str) -> dict:
+    """Stores the user's corrected transcript next to (not over) the model's transcript."""
+    document = await get_recordings().find_one_and_update(
+        {"_id": _object_id(recording_id), "user_id": user_id},
+        {"$set": {"corrected_transcript": transcript, "corrected_at": datetime.now(timezone.utc)}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if document is None:
+        raise RecordingNotFoundError
+    return document
+
+
 async def delete_recording(user_id: str, recording_id: str) -> None:
     document = await get_recording(user_id, recording_id)
     try:

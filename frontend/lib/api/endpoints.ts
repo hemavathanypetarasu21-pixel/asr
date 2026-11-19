@@ -52,6 +52,11 @@ export async function getRecordingAudio(id: string) {
   return data;
 }
 
+export async function saveTranscript(id: string, transcript: string) {
+  const { data } = await apiClient.patch<Recording>(`/recordings/${encodeURIComponent(id)}/transcript`, { transcript });
+  return data;
+}
+
 export async function deleteRecording(id: string) {
   await apiClient.delete(`/recordings/${encodeURIComponent(id)}`);
 }

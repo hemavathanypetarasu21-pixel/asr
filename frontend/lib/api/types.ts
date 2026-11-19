@@ -35,6 +35,9 @@ export type Recording = RecordingSettings & {
   duration: number | null;
   created_at: string;
   analysis: RecordingAnalysis | null;
+  /** The user's corrected transcript; the model's output stays in `analysis.transcript`. */
+  corrected_transcript: string | null;
+  corrected_at: string | null;
 };
 
 export type RecordingPage = {
