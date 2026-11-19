@@ -1,4 +1,4 @@
-# ASR Studio — v1.0.0
+# LingoSync — v1.0.0
 
 Speech recognition for Malaysian code-switched speech. Record or upload **Manglish** (Malay + English) or **Tanglish** (Tamil + English) audio, then analyse it to get a transcript, the detected dialect with a confidence score, and an English translation.
 

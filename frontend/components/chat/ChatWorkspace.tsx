@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import TranscriptionResult, { type TranscriptionItem } from "@/components/chat/TranscriptionResult";
 import { getApiErrorMessage } from "@/lib/api/client";
-import { saveSpeech, uploadAudio } from "@/lib/api/endpoints";
+import { analyseRecording, saveSpeech, uploadAudio } from "@/lib/api/endpoints";
 import { useSettings } from "@/lib/api/SettingsProvider";
-import type { Recording, RecordingSettings } from "@/lib/api/types";
+import type { RecordingSettings } from "@/lib/api/types";
 import { useOptions, type AppOptions } from "@/lib/api/useOptions";
 import { useRecorder } from "@/lib/audio/useRecorder";
 import { env } from "@/lib/env";
@@ -17,16 +18,15 @@ import { routes } from "@/lib/routes";
 
 const settingsSchema = z.object({
   language: z.string().min(1, "Choose a language."),
-  mode: z.string().min(1, "Choose a speaker mode."),
   recognition_model: z.string().min(1, "Choose a dialect recognition model."),
   translation_model: z.string().min(1, "Choose a translation model."),
 });
 
-type SavedItem = { key: string; name: string; status: "saving" | "saved" | "error"; recording?: Recording; error?: string };
+// The audio file and settings are kept so a failed save or transcription can be retried.
+type ResultEntry = TranscriptionItem & { file: File; settings: RecordingSettings };
 
 const fields: { name: keyof RecordingSettings; label: string; pick: (options: AppOptions) => { id: string; label: string }[] }[] = [
   { name: "language", label: "Language", pick: (options) => options.languages },
-  { name: "mode", label: "Speaker mode", pick: (options) => options.modes },
   { name: "recognition_model", label: "Dialect recognition model", pick: (options) => options.models.recognition },
   { name: "translation_model", label: "Translation model", pick: (options) => options.models.translation },
 ];
@@ -35,14 +35,14 @@ export default function ChatWorkspace() {
   const { options, error: optionsError, retry: retryOptions } = useOptions();
   const { settings } = useSettings();
   const recorder = useRecorder();
-  const [items, setItems] = useState<SavedItem[]>([]);
+  const [items, setItems] = useState<ResultEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Settings are captured when recording starts; the dropdowns are locked while recording.
   const recordingSettingsRef = useRef<RecordingSettings | null>(null);
   const form = useForm<RecordingSettings>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { language: "", mode: "", recognition_model: "", translation_model: "" },
+    defaultValues: { language: "", recognition_model: "", translation_model: "" },
   });
   const { errors } = form.formState;
 
@@ -67,16 +67,41 @@ export default function ChatWorkspace() {
     return null;
   }
 
-  async function save(file: File, source: "speak" | "upload", settings: RecordingSettings) {
-    const key = crypto.randomUUID();
-    setItems((current) => [{ key, name: file.name, status: "saving" }, ...current]);
-    try {
-      const recording = await (source === "speak" ? saveSpeech : uploadAudio)(file, settings);
-      setItems((current) => current.map((item) => (item.key === key ? { ...item, status: "saved", recording } : item)));
-    } catch (caught) {
-      const message = getApiErrorMessage(caught, "The recording could not be saved.");
-      setItems((current) => current.map((item) => (item.key === key ? { ...item, status: "error", error: message } : item)));
+  function update(key: string, changes: Partial<ResultEntry>) {
+    setItems((current) => current.map((item) => (item.key === key ? { ...item, ...changes } : item)));
+  }
+
+  /** Saves the audio (unless already saved), then transcribes it and shows the result below. */
+  async function process(entry: ResultEntry) {
+    let recording = entry.recording;
+    if (!recording) {
+      update(entry.key, { stage: "saving", error: undefined });
+      try {
+        recording = await (entry.source === "speak" ? saveSpeech : uploadAudio)(entry.file, entry.settings);
+      } catch (caught) {
+        update(entry.key, { stage: "error", error: getApiErrorMessage(caught, "The recording could not be saved.") });
+        return;
+      }
     }
+    update(entry.key, { stage: "transcribing", recording, error: undefined });
+    try {
+      const analysed = await analyseRecording(recording.id, {
+        recognition_model: entry.settings.recognition_model,
+        translation_model: entry.settings.translation_model,
+      });
+      update(entry.key, { stage: "done", recording: analysed });
+    } catch (caught) {
+      update(entry.key, {
+        stage: "error",
+        error: `${getApiErrorMessage(caught, "Transcription failed.")} Your audio is saved, so you can try again.`,
+      });
+    }
+  }
+
+  async function save(file: File, source: "speak" | "upload", settings: RecordingSettings) {
+    const entry: ResultEntry = { key: crypto.randomUUID(), name: file.name, source, language: settings.language, stage: "saving", file, settings };
+    setItems((current) => [entry, ...current]);
+    await process(entry);
   }
 
   async function toggleSpeak() {
@@ -146,10 +171,10 @@ export default function ChatWorkspace() {
       <div className="grid content-start gap-3">
         <section className="card flex flex-col items-center px-4 py-7 text-center" aria-labelledby="speak-heading">
           <h2 id="speak-heading" className="text-[15px] font-semibold text-heading">
-            {recorder.isRecording ? "Listening…" : "Speak in Manglish or Tanglish"}
+            {recorder.isRecording ? "Listening…" : "Speak in Malay + English or Tamil + English"}
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            {recorder.isRecording ? "Tap again to stop and save." : "Tap the microphone to start recording."}
+            {recorder.isRecording ? "Tap again to stop. The transcription appears below." : "Tap the microphone to start recording."}
           </p>
 
           <div className="relative mt-5 flex h-24 w-24 items-center justify-center">
@@ -199,34 +224,24 @@ export default function ChatWorkspace() {
           {error && <p className="mt-3 rounded-md bg-danger-soft p-2.5 text-xs text-danger" role="alert">{error}</p>}
         </section>
 
-        <section className="card p-4" aria-labelledby="saved-heading">
+        <section className="card p-4" aria-labelledby="results-heading">
           <div className="flex items-center justify-between">
-            <h2 id="saved-heading" className="text-[13px] font-semibold text-heading">Saved this session</h2>
-            <Link href={routes.insights} className="text-xs font-semibold text-brand hover:underline">Open insights →</Link>
+            <h2 id="results-heading" className="text-[15px] font-semibold text-heading">Transcription Results</h2>
+            <Link href={routes.insights} className="text-xs font-semibold text-brand hover:underline">All recordings →</Link>
           </div>
           {items.length === 0 ? (
-            <p className="mt-2 text-xs text-muted">Recordings you save appear here. Analyse them on the insights page.</p>
+            <p className="mt-2 text-xs text-muted">Record or upload audio above. Its transcription appears here as soon as it is ready.</p>
           ) : (
             <ul className="mt-3 divide-y divide-line" aria-live="polite">
               {items.map((item) => (
-                <li key={item.key} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-medium text-heading">{item.recording?.file_name ?? item.name}</p>
-                    {item.recording && options && (
-                      <p className="text-xs text-muted">
-                        {labelFor(options.languages, item.recording.language)} · {labelFor(options.modes, item.recording.mode)} · {formatDuration(item.recording.duration)}
-                      </p>
-                    )}
-                    {item.error && <p className="field-error">{item.error}</p>}
-                  </div>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      item.status === "saved" ? "bg-accent-soft text-accent" : item.status === "error" ? "bg-danger-soft text-danger" : "bg-subtle text-muted"
-                    }`}
-                  >
-                    {item.status === "saved" ? "Saved" : item.status === "error" ? "Failed" : "Saving…"}
-                  </span>
-                </li>
+                <TranscriptionResult
+                  key={item.key}
+                  item={item}
+                  languageLabel={labelFor(options?.languages ?? [], item.language)}
+                  onRetry={() => void process(item)}
+                  onClear={() => setItems((current) => current.filter((entry) => entry.key !== item.key))}
+                  onRecordingChange={(recording) => update(item.key, { recording })}
+                />
               ))}
             </ul>
           )}

@@ -18,6 +18,8 @@ class AnalyseRequest(BaseModel):
 
 class AnalysisResponse(BaseModel):
     transcript: str
+    # Original Tamil-script output when `transcript` was romanised.
+    transcript_native: str | None = None
     detected_dialect: Language | None
     confidence: float | None
     translation: str | None

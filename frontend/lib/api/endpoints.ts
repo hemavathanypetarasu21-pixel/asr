@@ -1,5 +1,7 @@
 import { apiClient } from "./client";
 import type {
+  DatasetPage,
+  DatasetSplit,
   ModelOptions,
   Option,
   Recording,
@@ -19,11 +21,6 @@ function recordingForm(file: File, settings: RecordingSettings) {
 
 export async function getLanguages() {
   const { data } = await apiClient.get<Option[]>("/languages");
-  return data;
-}
-
-export async function getModes() {
-  const { data } = await apiClient.get<Option[]>("/modes");
   return data;
 }
 
@@ -55,6 +52,11 @@ export async function getRecordingAudio(id: string) {
   return data;
 }
 
+export async function saveTranscript(id: string, transcript: string) {
+  const { data } = await apiClient.patch<Recording>(`/recordings/${encodeURIComponent(id)}/transcript`, { transcript });
+  return data;
+}
+
 export async function deleteRecording(id: string) {
   await apiClient.delete(`/recordings/${encodeURIComponent(id)}`);
 }
@@ -65,6 +67,16 @@ export async function analyseRecording(
   models: Pick<RecordingSettings, "recognition_model" | "translation_model">,
 ) {
   const { data } = await apiClient.post<Recording>(`/recordings/${encodeURIComponent(id)}/analyse`, models);
+  return data;
+}
+
+export async function getDatasetClips(params: { language?: string; split?: DatasetSplit; skip: number; limit: number }) {
+  const { data } = await apiClient.get<DatasetPage>("/dataset", { params });
+  return data;
+}
+
+export async function getDatasetClipAudio(id: string) {
+  const { data } = await apiClient.get<Blob>(`/dataset/${encodeURIComponent(id)}/audio`, { responseType: "blob" });
   return data;
 }
 

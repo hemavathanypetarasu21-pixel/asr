@@ -1,0 +1,94 @@
+{
+  "_about": "Registry of speech datasets considered for LingoSync. Every figure is copied from the dataset's own page (checked 2026-11-19); 'not stated' means the page did not say. Do not add figures that were not verified.",
+  "used": [
+    {
+      "id": "emilia_malaysian_podcast",
+      "name": "mesolitica/Malaysian-Emilia-v2 (malaysian_podcast subset)",
+      "url": "https://huggingface.co/datasets/mesolitica/Malaysian-Emilia-v2",
+      "language_pair": "malay_english",
+      "licence": "CC BY-NC 4.0",
+      "access": "Public, no login required",
+      "size": "Whole dataset 1.56M segments; malaysian_podcast metadata has 356,815 segments (~989 h, counted locally from the metadata parquet)",
+      "format": "MP3 segments in zip archives + parquet metadata (text, start, end, speaker, language, dnsmos)",
+      "transcripts": "Yes. How they were produced is not stated; Emilia-style pipelines normally use automatic ASR, so treat them as possibly machine-generated",
+      "speaker_ids": "Per-episode diarisation labels (SPEAKER_00, ...); not global, so splits are made by episode",
+      "code_mixed": "Yes in practice: Malaysian podcast speech with English inside Malay (e.g. 'So, kita pun terpaksa evolve ikut cara PKP'). Not labelled as code-mixed by the publisher",
+      "role": "Training and validation only (labels may be machine-made, so not used as a test set)",
+      "downloaded": "malaysian-podcast_processed-7-0.zip, malaysian-podcast_processed-5-0.zip"
+    },
+    {
+      "id": "slr127_mile_tamil",
+      "name": "IISc-MILE Tamil ASR Corpus (OpenSLR SLR127)",
+      "url": "https://openslr.org/127/",
+      "language_pair": "tamil_english",
+      "licence": "CC BY 2.0",
+      "access": "Public direct download",
+      "size": "~150 h, 531 speakers, 13 GB",
+      "format": "16 kHz 16-bit mono PCM WAV + UTF-8 .txt transcripts, train/test folders",
+      "transcripts": "Yes, human (read speech), Tamil script",
+      "speaker_ids": "Not stated on the page; derived from file names if present",
+      "code_mixed": "No. Monolingual read Tamil",
+      "role": "Training data for Tamil acoustics; transcripts romanised for the romanised-Tamil target"
+    },
+    {
+      "id": "slr65_google_tamil",
+      "name": "Crowdsourced high-quality Tamil multi-speaker speech data set (OpenSLR SLR65)",
+      "url": "https://openslr.org/65/",
+      "language_pair": "tamil_english",
+      "licence": "CC BY-SA 4.0",
+      "access": "Public direct download",
+      "size": "ta_in_female.zip 769 MB + ta_in_male.zip 603 MB; hours not stated",
+      "format": "WAV + line_index TSV",
+      "transcripts": "Yes, human (read sentences), Tamil script",
+      "speaker_ids": "Anonymised file IDs; speaker ID not stated",
+      "code_mixed": "No. Monolingual Tamil",
+      "role": "Training data for Tamil acoustics"
+    }
+  ],
+  "approved_needs_user_account": [
+    {
+      "id": "magichub_malay_conversational",
+      "name": "Malay Conversational Speech Corpus (MagicHub; SEACrowd loader asr_malcsc)",
+      "url": "https://magichub.com/datasets/malay-conversational-speech-corpus/",
+      "language_pair": "malay_english",
+      "licence": "CC BY-NC-ND 4.0 (no redistribution of modified copies)",
+      "access": "MagicHub download; account requirement to be confirmed by the user",
+      "size": "5 h, 10 conversations, 5 speaker pairs",
+      "transcripts": "Yes, human transcribed",
+      "code_mixed": "Not stated",
+      "role": "Human-labelled Malay test set"
+    },
+    {
+      "id": "indicvoices_tamil",
+      "name": "AI4Bharat IndicVoices (Tamil subset)",
+      "url": "https://huggingface.co/datasets/ai4bharat/IndicVoices",
+      "language_pair": "tamil_english",
+      "licence": "CC BY 4.0",
+      "access": "Gated: Hugging Face login and accepting the conditions",
+      "size": "11.2K transcribed hours across 22 languages; Tamil hours not stated",
+      "transcripts": "Yes; whether English words / code-mixing are marked is not stated",
+      "code_mixed": "Not stated (spontaneous Indian speech)",
+      "role": "Spontaneous Tamil training data, if the user creates an account"
+    },
+    {
+      "id": "common_voice_malay_tamil",
+      "name": "Mozilla Common Voice (Malay, Tamil) via Mozilla Data Collective",
+      "url": "https://mozilladatacollective.com",
+      "language_pair": "malay_english / tamil_english",
+      "licence": "Not verified (dataset pages render client-side and could not be read)",
+      "access": "Not verified",
+      "size": "Search listings: Malay Scripted 24.0 2,092 clips / 3.57 h; Malay Spontaneous 3.0 1,150 clips / 6.19 h / 24 speakers. Tamil not verified",
+      "code_mixed": "Mostly monolingual",
+      "role": "Optional extra data"
+    }
+  ],
+  "excluded": [
+    {"name": "mesolitica/Malaysian-STT-Whisper", "url": "https://huggingface.co/datasets/mesolitica/Malaysian-STT-Whisper", "reason": "No licence stated; transcripts are Whisper large-v3 pseudo-labels"},
+    {"name": "mesolitica/malaya-speech-malay-stt", "url": "https://huggingface.co/datasets/mesolitica/malaya-speech-malay-stt", "reason": "No licence stated; partly Google STT semi-supervised labels"},
+    {"name": "MUCS 2021 (OpenSLR SLR103/SLR104)", "url": "https://openslr.org/104/", "reason": "Code-switched pairs are Hindi-English and Bengali-English only; SLR103 has no Tamil"},
+    {"name": "BabelSpeech 50 h Malay colloquial", "url": null, "reason": "No source found that shows this dataset exists"},
+    {"name": "Zhagaram Labs Tamil/Tanglish conversational corpus", "url": null, "reason": "No source found that shows this dataset exists"},
+    {"name": "Commercial corpora (Nexdata, Macgence, Defined.ai, Speechocean)", "url": null, "reason": "Paid licences"}
+  ],
+  "known_gap": "No publicly downloadable, verifiable Tamil-English code-mixed speech corpus was found. Tamil-English test data must come from consented, hand-transcribed recordings made with the app."
+}

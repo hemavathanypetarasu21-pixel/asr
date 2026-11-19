@@ -70,7 +70,7 @@ export default function SettingsWorkspace({ profile }: { profile: Profile }) {
   const apiKeyForm = useForm({ resolver: zodResolver(apiKeySchema), defaultValues: { apiKey: "" } });
   const passwordForm = useForm({ resolver: zodResolver(passwordSchema), defaultValues: { password: "", confirmPassword: "" } });
   const defaultsForm = useForm<RecordingDefaults>({
-    defaultValues: { language: null, mode: null, recognition_model: null, translation_model: null },
+    defaultValues: { language: null, recognition_model: null, translation_model: null },
   });
 
   useEffect(() => {
@@ -131,7 +131,6 @@ export default function SettingsWorkspace({ profile }: { profile: Profile }) {
   const keyStatus = settings?.gemini_api_key;
   const defaultFields: { name: keyof RecordingDefaults; label: string; items: { id: string; label: string }[] }[] = [
     { name: "language", label: "Language", items: options?.languages ?? [] },
-    { name: "mode", label: "Speaker mode", items: options?.modes ?? [] },
     { name: "recognition_model", label: "Dialect recognition model", items: options?.models.recognition ?? [] },
     { name: "translation_model", label: "Translation model", items: options?.models.translation ?? [] },
   ];

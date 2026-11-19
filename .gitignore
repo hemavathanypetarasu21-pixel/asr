@@ -28,3 +28,7 @@ Thumbs.db
 # Windows services (local logs and the NSSM binary)
 services/logs/
 services/bin/
+
+# Speech datasets and training outputs (large; sources are listed in training/datasets.json)
+training/data/
+training/outputs/

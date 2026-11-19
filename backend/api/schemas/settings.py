@@ -4,7 +4,6 @@ from typing import Literal
 from pydantic import BaseModel, Field, SecretStr, field_validator
 
 from .languages import Language
-from .modes import Mode
 from .model_validators import known_recognition_model, known_translation_model
 
 
@@ -18,7 +17,6 @@ class RecordingDefaults(BaseModel):
     """Pre-selected chat dropdown values; None means the first option."""
 
     language: Language | None = None
-    mode: Mode | None = None
     recognition_model: str | None = None
     translation_model: str | None = None
 

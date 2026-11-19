@@ -6,8 +6,8 @@ export default function ChatPage() {
     <>
       <PageHeader
         title="Chat"
-        eyebrow="Manglish · Tanglish"
-        description="Pick your language and speaker mode, then speak or upload audio. Recordings are saved for analysis in Insights."
+        eyebrow="Malay + English · Tamil + English"
+        description="Pick your language, then speak or upload audio. The transcription appears below as soon as it is ready."
       />
       <ChatWorkspace />
     </>

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 
 from api.endpoints import recordings
-from api.schemas import RecordingPage
+from api.schemas import RecordingPage, RecordingResponse, TranscriptUpdate
 from src.auth import CurrentUser, get_current_user
 from src.config import settings
 
@@ -25,6 +25,11 @@ async def list_recordings(
 @router.get("/{recording_id}/audio", response_class=StreamingResponse)
 async def get_recording_audio(recording_id: str, user: User) -> StreamingResponse:
     return await recordings.get_recording_audio(user, recording_id)
+
+
+@router.patch("/{recording_id}/transcript", response_model=RecordingResponse)
+async def save_transcript(recording_id: str, update: TranscriptUpdate, user: User) -> RecordingResponse:
+    return await recordings.save_transcript(user, recording_id, update)
 
 
 @router.delete("/{recording_id}", status_code=status.HTTP_204_NO_CONTENT)

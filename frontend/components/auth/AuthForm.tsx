@@ -76,7 +76,7 @@ export default function AuthForm({ mode, next }: { mode: AuthMode; next?: string
         </h1>
         <p className="mt-1 text-[13px] text-muted">
           {isSignup
-            ? "Record Manglish and Tanglish speech and translate it to English."
+            ? "Record Malay + English and Tamil + English speech and translate it to English."
             : "Welcome back. Continue to your workspace."}
         </p>
 

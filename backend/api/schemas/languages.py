@@ -4,13 +4,14 @@ from pydantic import BaseModel
 
 
 class Language(str, Enum):
-    MANGLISH = "manglish"
-    TANGLISH = "tanglish"
+    # Values are stored on saved recordings and used by the dialect/translation services; never shown in the UI.
+    MALAY_ENGLISH = "manglish"
+    TAMIL_ENGLISH = "tanglish"
 
 
 LANGUAGE_LABELS: dict[Language, str] = {
-    Language.MANGLISH: "Manglish (Malay + English)",
-    Language.TANGLISH: "Tanglish (Tamil + English)",
+    Language.MALAY_ENGLISH: "Malay + English",
+    Language.TAMIL_ENGLISH: "Tamil + English",
 }
 
 

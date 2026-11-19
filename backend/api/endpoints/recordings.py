@@ -3,7 +3,15 @@ from pathlib import Path
 from fastapi import HTTPException, status
 from fastapi.responses import StreamingResponse
 
-from api.schemas import RecordingPage, RecordingResponse, RecordingSettings, RecordingSource, SpeakForm, UploadForm
+from api.schemas import (
+    RecordingPage,
+    RecordingResponse,
+    RecordingSettings,
+    RecordingSource,
+    SpeakForm,
+    TranscriptUpdate,
+    UploadForm,
+)
 from src.auth import CurrentUser
 from src.config import settings
 from src.services import audio_service, recording_service
@@ -59,6 +67,14 @@ async def get_recording_audio(user: CurrentUser, recording_id: str) -> Streaming
     except RecordingNotFoundError as error:
         raise NOT_FOUND from error
     return StreamingResponse(chunks, media_type=document.get("content_type", DEFAULT_CONTENT_TYPE))
+
+
+async def save_transcript(user: CurrentUser, recording_id: str, update: TranscriptUpdate) -> RecordingResponse:
+    try:
+        document = await recording_service.save_corrected_transcript(user.id, recording_id, update.transcript)
+    except RecordingNotFoundError as error:
+        raise NOT_FOUND from error
+    return RecordingResponse.from_document(document)
 
 
 async def delete_recording(user: CurrentUser, recording_id: str) -> None:

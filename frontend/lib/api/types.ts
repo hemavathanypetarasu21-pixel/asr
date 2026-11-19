@@ -10,13 +10,14 @@ export type RecordingSource = "speak" | "upload";
 /** Choices made on the chat page and stored with every recording. */
 export type RecordingSettings = {
   language: string;
-  mode: string;
   recognition_model: string;
   translation_model: string;
 };
 
 export type RecordingAnalysis = {
   transcript: string;
+  /** Original Tamil-script output when `transcript` was romanised. */
+  transcript_native: string | null;
   detected_dialect: string | null;
   confidence: number | null;
   translation: string | null;
@@ -34,12 +35,43 @@ export type Recording = RecordingSettings & {
   duration: number | null;
   created_at: string;
   analysis: RecordingAnalysis | null;
+  /** The user's corrected transcript; the model's output stays in `analysis.transcript`. */
+  corrected_transcript: string | null;
+  corrected_at: string | null;
 };
 
 export type RecordingPage = {
   items: Recording[];
   total: number;
   analysed: number;
+};
+
+export type DatasetSplit = "train" | "validation" | "test";
+
+/** A clip from an imported speech dataset (read-only, shared by all users). */
+export type DatasetClip = {
+  id: string;
+  file_name: string;
+  duration: number;
+  language: string;
+  /** Original transcript as published; Tamil is in Tamil script. */
+  transcript: string;
+  /** Romanised Tamil (Tanglish style); same as `transcript` for Malay-English. */
+  training_text: string;
+  is_code_mixed: boolean | null;
+  speaker_id: string;
+  split: DatasetSplit;
+  source: string;
+  source_url: string | null;
+  licence: string;
+};
+
+export type DatasetPage = {
+  items: DatasetClip[];
+  /** Clips matching the filters. */
+  total: number;
+  /** Whole dataset, by language and split. */
+  summary: { language: string; split: DatasetSplit; clips: number; hours: number }[];
 };
 
 export type Theme = "light" | "dark" | "system";
