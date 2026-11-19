@@ -34,7 +34,6 @@ export default function RecordingItem({
   const analysis = recording.analysis;
   const optionLists = {
     languages: options?.languages ?? [],
-    modes: options?.modes ?? [],
     recognition: options?.models.recognition ?? [],
     translation: options?.models.translation ?? [],
   };
@@ -121,7 +120,7 @@ export default function RecordingItem({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-semibold text-heading">{recording.file_name}</span>
               <span className="block text-[11px] text-muted">
-                {formatDateTime(recording.created_at)} · {formatDuration(recording.duration)} · {label("languages", recording.language)} · {label("modes", recording.mode)}
+                {formatDateTime(recording.created_at)} · {formatDuration(recording.duration)} · {label("languages", recording.language)}
               </span>
             </span>
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${analysis ? "bg-accent-soft text-accent" : "bg-subtle text-muted"}`}>
@@ -172,7 +171,7 @@ export default function RecordingItem({
 
           {analysis ? (
             <>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2">
                 <MetricTile
                   label="Detected dialect"
                   value={analysis.detected_dialect ? label("languages", analysis.detected_dialect) : "Unclear"}
@@ -180,12 +179,14 @@ export default function RecordingItem({
                   tone={matches === false ? "warn" : "default"}
                 />
                 <MetricTile label="Confidence" value={analysis.confidence == null ? "—" : formatPercent(analysis.confidence)} />
-                <MetricTile label="Speaker mode" value={label("modes", recording.mode)} />
               </div>
               <div className="grid gap-2 md:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">Transcript</p>
                   <p className="mt-1 rounded-md bg-subtle p-2.5 text-[13px] leading-6 text-ink">{analysis.transcript || "No speech recognised."}</p>
+                  {analysis.transcript_native && (
+                    <p className="mt-1 text-[11px] leading-4 text-muted" lang="ta">Tamil script: {analysis.transcript_native}</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">English translation</p>

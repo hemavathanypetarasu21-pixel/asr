@@ -6,7 +6,6 @@ from pydantic import BaseModel, field_validator
 from .analyse import AnalysisResponse
 from .languages import Language
 from .model_validators import known_recognition_model, known_translation_model
-from .modes import Mode
 
 
 class RecordingSource(str, Enum):
@@ -18,7 +17,6 @@ class RecordingFields(BaseModel):
     """Choices from the chat page, stored with every recording."""
 
     language: Language
-    mode: Mode
     recognition_model: str
     translation_model: str
 

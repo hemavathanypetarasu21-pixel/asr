@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getApiErrorMessage } from "./client";
-import { getLanguages, getModels, getModes } from "./endpoints";
+import { getLanguages, getModels } from "./endpoints";
 import type { ModelOptions, Option } from "./types";
 
 export type AppOptions = {
   languages: Option[];
-  modes: Option[];
   models: ModelOptions;
 };
 
@@ -24,14 +23,13 @@ export function useOptions() {
 
   useEffect(() => {
     let isCurrent = true;
-    Promise.allSettled([getLanguages(), getModes(), getModels()]).then(([languages, modes, models]) => {
+    Promise.allSettled([getLanguages(), getModels()]).then(([languages, models]) => {
       if (!isCurrent) return;
       setOptions({
         languages: languages.status === "fulfilled" ? languages.value : [],
-        modes: modes.status === "fulfilled" ? modes.value : [],
         models: models.status === "fulfilled" ? models.value : EMPTY_MODELS,
       });
-      const failure = [languages, modes, models].find((result) => result.status === "rejected");
+      const failure = [languages, models].find((result) => result.status === "rejected");
       setError(failure ? getApiErrorMessage(failure.reason, "Some options could not be loaded.") : null);
     });
     return () => {

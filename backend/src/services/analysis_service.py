@@ -10,7 +10,11 @@ from whisper import Whisper
 
 from src.config import settings
 from src.services import dialect_service, recording_service, translation_service, user_settings_service, whisper_service
+from src.services.tamil_romanisation import romanise
 from src.services.crypto_service import DecryptionError
+
+# Whisper language token per dialect (fine-tuned models were also trained with these tokens).
+WHISPER_LANGUAGES = {"manglish": "ms", "tanglish": "ta"}
 
 # Example code-switched text primes Whisper to keep both languages as spoken (keyed by declared language).
 TRANSCRIPTION_PROMPTS = {
@@ -27,7 +31,7 @@ async def _translate(
     transcript: str,
     dialect: str,
     gemini_model: str,
-    whisper_model: Whisper,
+    whisper_model: "Whisper | whisper_service.FineTunedWhisper",
     whisper_model_id: str,
     audio: np.ndarray,
 ) -> tuple[str, str, str | None]:
@@ -65,12 +69,18 @@ async def analyse(
         whisper_service.language_probabilities, model, audio, settings.DIALECT_DETECTION_MAX_WINDOWS
     )
     detected = dialect_service.classify(probabilities)
-    transcript = await asyncio.to_thread(
-        whisper_service.transcribe, model, audio, TRANSCRIPTION_PROMPTS[document["language"]]
+    # The language token is forced (detected dialect, else declared): on Tamil test clips auto-detection picked
+    # the wrong language for 36% of clips with Whisper tiny, and forcing cut CER from 44% to 34%
+    # (training/outputs/eval/tiny-auto vs tiny-forced). Malay-English accuracy was unchanged.
+    language = WHISPER_LANGUAGES[detected.dialect or document["language"]]
+    native_transcript = await asyncio.to_thread(
+        whisper_service.transcribe, model, audio, TRANSCRIPTION_PROMPTS[document["language"]], language
     )
+    # Tamil is shown romanised (Tanglish style); the Tamil-script original is kept alongside it.
+    transcript = romanise(native_transcript)
     translation, translation_model_used, translation_note = await _translate(
         user_id,
-        transcript,
+        native_transcript,
         detected.dialect or document["language"],
         translation_model,
         model,
@@ -80,6 +90,7 @@ async def analyse(
 
     analysis = {
         "transcript": transcript,
+        "transcript_native": native_transcript if native_transcript != transcript else None,
         "detected_dialect": detected.dialect,
         "confidence": detected.confidence,
         "translation": translation,

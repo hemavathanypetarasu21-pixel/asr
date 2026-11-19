@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: env.appName,
-  description: "Speech-to-text for Manglish (Malay–English) and Tanglish (Tamil–English) code-switched speech.",
+  description: "Speech-to-text for Malay + English and Tamil + English code-switched speech.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

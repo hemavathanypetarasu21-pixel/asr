@@ -4,6 +4,7 @@ export const routes = {
   signup: "/auth/signup",
   chat: "/dashboard",
   insights: "/dashboard/insights",
+  dataset: "/dashboard/dataset",
   settings: "/dashboard/settings",
 } as const;
 

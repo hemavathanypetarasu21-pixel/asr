@@ -17,7 +17,6 @@ import { routes } from "@/lib/routes";
 
 const settingsSchema = z.object({
   language: z.string().min(1, "Choose a language."),
-  mode: z.string().min(1, "Choose a speaker mode."),
   recognition_model: z.string().min(1, "Choose a dialect recognition model."),
   translation_model: z.string().min(1, "Choose a translation model."),
 });
@@ -26,7 +25,6 @@ type SavedItem = { key: string; name: string; status: "saving" | "saved" | "erro
 
 const fields: { name: keyof RecordingSettings; label: string; pick: (options: AppOptions) => { id: string; label: string }[] }[] = [
   { name: "language", label: "Language", pick: (options) => options.languages },
-  { name: "mode", label: "Speaker mode", pick: (options) => options.modes },
   { name: "recognition_model", label: "Dialect recognition model", pick: (options) => options.models.recognition },
   { name: "translation_model", label: "Translation model", pick: (options) => options.models.translation },
 ];
@@ -42,7 +40,7 @@ export default function ChatWorkspace() {
   const recordingSettingsRef = useRef<RecordingSettings | null>(null);
   const form = useForm<RecordingSettings>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { language: "", mode: "", recognition_model: "", translation_model: "" },
+    defaultValues: { language: "", recognition_model: "", translation_model: "" },
   });
   const { errors } = form.formState;
 
@@ -146,7 +144,7 @@ export default function ChatWorkspace() {
       <div className="grid content-start gap-3">
         <section className="card flex flex-col items-center px-4 py-7 text-center" aria-labelledby="speak-heading">
           <h2 id="speak-heading" className="text-[15px] font-semibold text-heading">
-            {recorder.isRecording ? "Listening…" : "Speak in Manglish or Tanglish"}
+            {recorder.isRecording ? "Listening…" : "Speak in Malay + English or Tamil + English"}
           </h2>
           <p className="mt-0.5 text-xs text-muted">
             {recorder.isRecording ? "Tap again to stop and save." : "Tap the microphone to start recording."}
@@ -214,7 +212,7 @@ export default function ChatWorkspace() {
                     <p className="truncate text-[13px] font-medium text-heading">{item.recording?.file_name ?? item.name}</p>
                     {item.recording && options && (
                       <p className="text-xs text-muted">
-                        {labelFor(options.languages, item.recording.language)} · {labelFor(options.modes, item.recording.mode)} · {formatDuration(item.recording.duration)}
+                        {labelFor(options.languages, item.recording.language)} · {formatDuration(item.recording.duration)}
                       </p>
                     )}
                     {item.error && <p className="field-error">{item.error}</p>}

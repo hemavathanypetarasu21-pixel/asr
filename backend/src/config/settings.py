@@ -58,6 +58,8 @@ class Settings(BaseSettings):
 
     # Dropdown options (JSON lists of {"id", "label"})
     RECOGNITION_MODELS: list[ModelOption]
+    # Recognition model id -> local Hugging Face Whisper folder (fine-tuned); other ids load via openai-whisper.
+    FINETUNED_MODEL_DIRS: dict[str, str]
     TRANSLATION_MODELS: list[ModelOption]
 
     @property

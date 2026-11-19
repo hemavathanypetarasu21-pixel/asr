@@ -9,6 +9,7 @@ import { routes } from "@/lib/routes";
 const menuItems = [
   { label: "Chat", href: routes.chat, icon: "M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Zm6-3a6 6 0 0 1-12 0m6 6v3" },
   { label: "Insights", href: routes.insights, icon: "M4 19V9m5 10V5m5 14v-7m5 7V3" },
+  { label: "Dataset", href: routes.dataset, icon: "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3Zm0 0v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" },
 ] as const;
 
 export default function Sidebar({ brand, profile }: { brand: ReactNode; profile: Profile }) {

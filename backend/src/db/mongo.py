@@ -8,6 +8,9 @@ from src.config import settings
 RECORDINGS_COLLECTION = "recordings"
 USER_SETTINGS_COLLECTION = "user_settings"
 AUDIO_BUCKET = "audio"
+# Speech dataset clips imported by training/scripts/upload_to_mongodb.py; separate from user recordings.
+DATASET_COLLECTION = "dataset_clips"
+DATASET_AUDIO_BUCKET = "dataset_audio"
 
 _client: AsyncMongoClient | None = None
 _database: AsyncDatabase | None = None
@@ -43,3 +46,11 @@ def get_user_settings() -> AsyncCollection:
 
 def get_audio_bucket() -> AsyncGridFSBucket:
     return AsyncGridFSBucket(_db(), bucket_name=AUDIO_BUCKET)
+
+
+def get_dataset_clips() -> AsyncCollection:
+    return _db()[DATASET_COLLECTION]
+
+
+def get_dataset_audio_bucket() -> AsyncGridFSBucket:
+    return AsyncGridFSBucket(_db(), bucket_name=DATASET_AUDIO_BUCKET)

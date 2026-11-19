@@ -9,7 +9,6 @@ files = [
     "speak",  # button: record from the microphone, saved on stop
     "upload",  # button: upload an audio file
     "languages",  # dropdown menu: tanglish / manglish
-    "modes",  # dropdown menu: native / non-native speaker
     "models",  # dropdown menus: dialect recognition models / translation models
     # insights
     "recordings",  # accordion list, audio playback, delete
