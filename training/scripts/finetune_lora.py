@@ -7,6 +7,8 @@ While it runs, Windows is asked not to sleep (the setting is released when the s
 
 Usage (from training/):
     python scripts/finetune_lora.py --base openai/whisper-base --benchmark 3     # time a few steps
+On a GPU (Kaggle / Colab), with the data unpacked from outputs/lingosync_data.zip:
+    python finetune_lora.py --gpu --base openai/whisper-small --data-root /kaggle/working/data_root --output /kaggle/working/whisper-small-lingosync
     python scripts/finetune_lora.py --base openai/whisper-base --max-steps 1500
 """
 
@@ -33,16 +35,17 @@ def keep_awake() -> None:
 
 
 class SpeechDataset(torch.utils.data.Dataset):
-    def __init__(self, rows: pd.DataFrame, processor):
+    def __init__(self, rows: pd.DataFrame, processor, data_root: Path):
         self.rows = rows.to_dict("records")
         self.processor = processor
+        self.data_root = data_root
 
     def __len__(self):
         return len(self.rows)
 
     def __getitem__(self, index):
         row = self.rows[index]
-        audio, _ = sf.read(ROOT / row["audio_path"], dtype="float32")
+        audio, _ = sf.read(self.data_root / row["audio_path"], dtype="float32")
         features = self.processor.feature_extractor(audio, sampling_rate=16000).input_features[0]
         self.processor.tokenizer.set_prefix_tokens(language=LANGUAGE[row["language_pair"]], task="transcribe")
         labels = self.processor.tokenizer(str(row["training_text"])).input_ids
@@ -64,6 +67,33 @@ class Collator:
         return {"input_features": features["input_features"], "labels": label_ids}
 
 
+def validation_scores(model, processor, rows: pd.DataFrame, data_root: Path, batch_size: int) -> dict:
+    """Greedy-decoding WER / CER on the validation sample, per language pair (training_text targets)."""
+    import re
+
+    import jiwer
+
+    def normalise(text: str) -> str:
+        return re.sub(r"\s+", " ", re.sub(r"[^\w\s'஀-௿]", " ", str(text).lower())).strip()
+
+    model.eval()
+    device, dtype = next(model.parameters()).device, next(model.parameters()).dtype
+    scores = {}
+    for pair, frame in rows.groupby("language_pair"):
+        hypotheses = []
+        for start in range(0, len(frame), batch_size):
+            chunk = frame.iloc[start : start + batch_size]
+            audio = [sf.read(data_root / path, dtype="float32")[0] for path in chunk.audio_path]
+            features = processor.feature_extractor(audio, sampling_rate=16000, return_tensors="pt").input_features.to(device, dtype)
+            with torch.no_grad():
+                ids = model.generate(input_features=features, language=LANGUAGE[pair], task="transcribe", max_new_tokens=225)
+            hypotheses += processor.batch_decode(ids, skip_special_tokens=True)
+        references = [normalise(text) for text in frame.training_text]
+        hypotheses = [normalise(text) for text in hypotheses]
+        scores[pair] = {"clips": len(frame), "wer": round(jiwer.wer(references, hypotheses), 4), "cer": round(jiwer.cer(references, hypotheses), 4)}
+    return scores
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", default="openai/whisper-base")
@@ -74,22 +104,28 @@ def main() -> None:
     parser.add_argument("--save-steps", type=int, default=100)
     parser.add_argument("--validation-clips", type=int, default=200, help="fixed validation sample for loss checks")
     parser.add_argument("--benchmark", type=int, default=0, help="only time this many training steps, then exit")
+    parser.add_argument("--gpu", action="store_true", help="train on the GPU in fp16 (Kaggle / Colab)")
+    parser.add_argument("--data-root", type=Path, default=ROOT, help="folder containing data/splits/...")
     args = parser.parse_args()
 
-    import truststore
+    try:  # Windows certificate store (needed on this PC); not installed on Kaggle / Colab
+        import truststore
 
-    truststore.inject_into_ssl()
+        truststore.inject_into_ssl()
+    except ImportError:
+        pass
     from peft import LoraConfig, get_peft_model
     from transformers import Seq2SeqTrainer, Seq2SeqTrainingArguments, WhisperForConditionalGeneration, WhisperProcessor
 
     keep_awake()
     torch.manual_seed(13)
     processor = WhisperProcessor.from_pretrained(args.base)
-    train_rows = pd.read_csv(ROOT / "data/splits/train/manifest.csv").sample(frac=1, random_state=13)
-    validation_rows = (pd.read_csv(ROOT / "data/splits/validation/manifest.csv")
+    train_rows = pd.read_csv(args.data_root / "data/splits/train/manifest.csv").sample(frac=1, random_state=13)
+    validation_rows = (pd.read_csv(args.data_root / "data/splits/validation/manifest.csv")
                        .groupby("language_pair", group_keys=False)
                        .apply(lambda frame: frame.sample(min(args.validation_clips // 2, len(frame)), random_state=13)))
-    train_set, validation_set = SpeechDataset(train_rows, processor), SpeechDataset(validation_rows, processor)
+    train_set = SpeechDataset(train_rows, processor, args.data_root)
+    validation_set = SpeechDataset(validation_rows, processor, args.data_root)
 
     model = WhisperForConditionalGeneration.from_pretrained(args.base)
     model.config.forced_decoder_ids = None
@@ -110,7 +146,8 @@ def main() -> None:
         learning_rate=args.learning_rate,
         warmup_steps=min(100, max_steps // 10),
         max_steps=max_steps,
-        use_cpu=True,
+        use_cpu=not args.gpu,
+        fp16=args.gpu,
         eval_strategy="no" if args.benchmark else "steps",
         eval_steps=args.save_steps * 3,
         save_steps=args.save_steps,
@@ -118,7 +155,7 @@ def main() -> None:
         logging_steps=1 if args.benchmark else 10,
         remove_unused_columns=False,
         label_names=["labels"],
-        dataloader_num_workers=0,
+        dataloader_num_workers=2 if args.gpu else 0,
         report_to="none",
         save_strategy="no" if args.benchmark else "steps",
     )
@@ -138,6 +175,8 @@ def main() -> None:
     final_loss = trainer.evaluate()
 
     merged = model.merge_and_unload()
+    validation_wer = validation_scores(merged, processor, validation_rows, args.data_root, args.batch_size)
+    print("validation:", json.dumps(validation_wer), flush=True)
     merged.save_pretrained(output, safe_serialization=True)
     processor.save_pretrained(output)
     info = {
@@ -149,6 +188,7 @@ def main() -> None:
         "epochs": round(epochs, 2),
         "learning_rate": args.learning_rate,
         "final_validation_loss": final_loss.get("eval_loss"),
+        "validation_by_language_pair": validation_wer,
         "training_hours": round((time.time() - started) / 3600, 2),
         "train_log": trainer.state.log_history,
     }
